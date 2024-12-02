@@ -48,11 +48,11 @@ class Diagnostic:  # pylint: disable=too-many-instance-attributes
 
     def __str__(self) -> str:
         parts = [f"{self.filename}", f"{self.line + 1}"]
-        if self.line_end is not None and self.line != self.line_end:
+        if self.line_end is not None:
             parts[-1] += f"-{self.line_end + 1}"
         if self.column is not None:
             parts.append(f"{self.column + 1}")
-            if self.column_end is not None and self.column != self.column_end:
+            if self.column_end is not None:
                 parts[-1] += f"-{self.column_end + 1}"
         parts.append(f" {self.message} [{self.code}/{self.name}]")
         return ":".join(parts)
@@ -655,8 +655,6 @@ class AnalyseLVars(Rule):  # pylint: disable=too-many-instance-attributes
         self._ws2_p = re.compile(r"\n[ \t\r\f\v]+")
         self._rec_p = re.compile(r"\brec\(")
         self._comment_p = re.compile(r" *#.*?\n")
-        self._func_bodies = []
-        self._func_position = []
 
     def reset(self) -> None:
         self._depth = -1
@@ -665,6 +663,8 @@ class AnalyseLVars(Rule):  # pylint: disable=too-many-instance-attributes
         self._assigned_lvars = []
         self._used_lvars = []
         self._func_start_pos = []
+        self._func_bodies = []
+        self._func_position = []
 
     def _remove_recs_and_whitespace(self, lines: str) -> str:
         # Remove almost all whitespace
@@ -1164,7 +1164,7 @@ class Indentation(Rule):
 
     def __init__(self, name: str, code: str, desc: str = "") -> None:
         Rule.__init__(self, name, code, desc)
-        self._expected = 0
+        self.reset()
         self._indent = re.compile(r"^(\s*)\S")
         self._blank = re.compile(r"^\s*$")
         self._before = []
@@ -2370,6 +2370,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements, too-many-bran
                     )
         too_many_warnings(nr_warnings + total_num_warnings)
         for rule in _LINE_RULES:
+            rule.reset()
+        for rule in _FILE_RULES:
             rule.reset()
         total_num_warnings += nr_warnings
 
